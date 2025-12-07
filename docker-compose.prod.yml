@@ -1,0 +1,109 @@
+# ==================================================
+# 🐳 DOCKER COMPOSE - PRODUCTION
+# ==================================================
+# Production-ready configuration with resource limits
+#
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    container_name: ecommerce-auth
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - REDIS_URI=${REDIS_URI}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    restart: always
+
+  product-service:
+    build:
+      context: .
+      dockerfile: services/products/Dockerfile
+    container_name: ecommerce-products
+    ports:
+      - "8002:8002"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - REDIS_URI=${REDIS_URI}
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    restart: always
+
+  cart-service:
+    build:
+      context: .
+      dockerfile: services/cart/Dockerfile
+    container_name: ecommerce-cart
+    ports:
+      - "8003:8003"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - REDIS_URI=${REDIS_URI}
+      - PRODUCT_SERVICE_PORT=8002
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    restart: always
+
+  order-service:
+    build:
+      context: .
+      dockerfile: services/orders/Dockerfile
+    container_name: ecommerce-orders
+    ports:
+      - "8004:8004"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - REDIS_URI=${REDIS_URI}
+      - CART_SERVICE_PORT=8003
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+    restart: always
+
+  gateway:
+    image: nginx:alpine
+    container_name: ecommerce-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - product-service
+      - cart-service
+      - order-service
+    restart: always
