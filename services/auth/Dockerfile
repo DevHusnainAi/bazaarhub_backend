@@ -22,6 +22,7 @@ RUN pip install uv
 # Copy dependency files first (better layer caching)
 COPY pyproject.toml ./
 COPY uv.lock* README.md ./
+COPY src/ ./src/
 
 # Install dependencies
 RUN uv sync --frozen --no-dev
