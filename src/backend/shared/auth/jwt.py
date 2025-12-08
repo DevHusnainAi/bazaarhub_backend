@@ -26,19 +26,11 @@ Handle JWT token creation, validation, and password hashing.
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from backend.shared.config import settings
-
-
-# ✅ BEST PRACTICE: Configure bcrypt with proper settings
-# 'deprecated="auto"' handles algorithm upgrades gracefully
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-)
 
 
 class TokenPayload(BaseModel):
@@ -80,14 +72,17 @@ def hash_password(password: str) -> str:
         hashed = hash_password("user_password123")
         # Returns something like: $2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJq...
     """
-    return pwd_context.hash(password)
+    # Truncate to 72 bytes (bcrypt limit)
+    password_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password_bytes, salt).decode('utf-8')
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a password against its hash.
     
-    ✅ BEST PRACTICE: Use constant-time comparison (passlib does this)
+    ✅ BEST PRACTICE: Use constant-time comparison (bcrypt does this)
     This prevents timing attacks.
     
     Args:
@@ -97,7 +92,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True if password matches, False otherwise
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    # Truncate to 72 bytes (bcrypt limit)
+    password_bytes = plain_password.encode('utf-8')[:72]
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 
 # ==================================================

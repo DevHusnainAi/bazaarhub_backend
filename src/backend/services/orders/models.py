@@ -133,8 +133,15 @@ class OrderListItem(BaseModel):
 # 📥 REQUEST SCHEMAS
 # ==================================================
 
+class OrderItemRequest(BaseModel):
+    """Item in create order request."""
+    product_id: str
+    quantity: int
+
+
 class CreateOrderRequest(BaseModel):
     """Request to create order from cart."""
+    items: list[OrderItemRequest]
     shipping_address: ShippingAddress
 
 

@@ -37,10 +37,11 @@ class User(Document):
     """
     # ✅ BEST PRACTICE: Use EmailStr for automatic email validation
     email: Indexed(EmailStr, unique=True)  # type: ignore
-    password_hash: str = Field(exclude=True)  # Never expose in responses
+    password_hash: str  # Never expose in API responses (use response models)
     
     # Profile info
     name: str
+    phone: str | None = None
     avatar_url: str | None = None
     
     # Account status
@@ -76,6 +77,7 @@ class UserResponse(BaseModel):
     id: str
     email: EmailStr
     name: str
+    phone: str | None = None
     avatar_url: str | None
     is_active: bool
     is_verified: bool
@@ -88,6 +90,7 @@ class UserResponse(BaseModel):
             id=str(user.id),
             email=user.email,
             name=user.name,
+            phone=user.phone,
             avatar_url=user.avatar_url,
             is_active=user.is_active,
             is_verified=user.is_verified,
@@ -100,6 +103,7 @@ class UserProfileResponse(BaseModel):
     id: str
     email: EmailStr
     name: str
+    phone: str | None = None
     avatar_url: str | None
     is_active: bool
     is_verified: bool
@@ -113,6 +117,7 @@ class UserProfileResponse(BaseModel):
             id=str(user.id),
             email=user.email,
             name=user.name,
+            phone=user.phone,
             avatar_url=user.avatar_url,
             is_active=user.is_active,
             is_verified=user.is_verified,
@@ -151,6 +156,7 @@ class UserUpdate(BaseModel):
     ✅ BEST PRACTICE: All fields optional for partial updates
     """
     name: str | None = Field(default=None, min_length=1, max_length=100)
+    phone: str | None = Field(default=None, min_length=1, max_length=20)
     avatar_url: str | None = None
 
 

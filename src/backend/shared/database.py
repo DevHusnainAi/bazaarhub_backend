@@ -56,8 +56,12 @@ async def init_database(document_models: list[type["Document"]]) -> None:
     global _client
     
     # ✅ BEST PRACTICE: Configure connection with sensible defaults
+    import logging
+    # Suppress verbose MongoDB driver logs
+    logging.getLogger("pymongo").setLevel(logging.WARNING)
+    
     _client = AsyncIOMotorClient(
-        str(settings.MONGODB_URI),
+        settings.MONGODB_URI,
         # Connection pool settings for scalability
         maxPoolSize=50,           # Max concurrent connections
         minPoolSize=10,           # Keep connections warm

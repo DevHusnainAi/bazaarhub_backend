@@ -34,37 +34,61 @@ class OrderService:
         data: CreateOrderRequest,
     ) -> OrderResponse:
         """
-        Create a new order from user's cart.
+        Create a new order from user's request items.
         
         Steps:
-        1. Fetch cart from Cart Service
-        2. Create order with cart items
-        3. Clear the cart
+        1. Validate items
+        2. Fetch product details (price, name) from DB
+        3. Calculate totals
+        4. Create order
         """
         logger.info("Creating order", user_id=user_id)
         
-        # Fetch cart
-        cart = await self._fetch_cart(user_id)
-        
-        if not cart.get("items"):
+        if not data.items:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cart is empty",
+                detail="Order must contain at least one item",
             )
+            
+        # Import here to avoid circular dependency
+        from backend.services.products.models import Product
         
-        # Convert cart items to order items
-        order_items = [
-            OrderItem(
-                product_id=item["product_id"],
-                name=item["name"],
-                price=Decimal(str(item["price"])),
-                quantity=item["quantity"],
-                item_total=Decimal(str(item["item_total"])),
+        order_items = []
+        subtotal = Decimal("0.00")
+        
+        for item in data.items:
+            # Fetch product to get current price and name
+            product = await Product.get(PydanticObjectId(item.product_id))
+            if not product:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Product not found: {item.product_id}",
+                )
+            
+            # Check stock
+            if product.stock < item.quantity:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Insufficient stock for {product.name}",
+                )
+            
+            # Deduct stock
+            product.stock -= item.quantity
+            await product.save()
+            
+            item_total = product.price * item.quantity
+            subtotal += item_total
+            
+            order_items.append(
+                OrderItem(
+                    product_id=str(product.id),
+                    name=product.name,
+                    price=product.price,
+                    quantity=item.quantity,
+                    item_total=item_total,
+                )
             )
-            for item in cart["items"]
-        ]
-        
-        subtotal = Decimal(str(cart["subtotal"]))
+
         shipping_cost = Decimal("0.00")  # Free shipping for now
         tax = subtotal * Decimal("0.05")  # 5% tax
         total = subtotal + shipping_cost + tax
@@ -81,9 +105,6 @@ class OrderService:
             status=OrderStatus.PENDING,
         )
         await order.insert()
-        
-        # Clear cart after successful order
-        await self._clear_cart(user_id)
         
         logger.info("Order created", order_id=str(order.id), total=str(total))
         return OrderResponse.from_document(order)

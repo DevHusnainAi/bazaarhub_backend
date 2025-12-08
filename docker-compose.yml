@@ -33,19 +33,6 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: ecommerce-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # --------------------------------------------------
   # ⚙️ MICROSERVICES
   # --------------------------------------------------
@@ -61,13 +48,12 @@ services:
       - DEBUG=true
       - MONGODB_URI=mongodb://mongodb:27017
       - MONGODB_DATABASE=ecommerce
-      - REDIS_URI=redis://redis:6379
+      - REDIS_URI=${REDIS_URI}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
     depends_on:
       mongodb:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+
     restart: unless-stopped
 
   product-service:
@@ -82,12 +68,11 @@ services:
       - DEBUG=true
       - MONGODB_URI=mongodb://mongodb:27017
       - MONGODB_DATABASE=ecommerce
-      - REDIS_URI=redis://redis:6379
+      - REDIS_URI=${REDIS_URI}
     depends_on:
       mongodb:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+
     restart: unless-stopped
 
   cart-service:
@@ -102,7 +87,7 @@ services:
       - DEBUG=true
       - MONGODB_URI=mongodb://mongodb:27017
       - MONGODB_DATABASE=ecommerce
-      - REDIS_URI=redis://redis:6379
+      - REDIS_URI=${REDIS_URI}
       - PRODUCT_SERVICE_PORT=8002
     depends_on:
       mongodb:
@@ -123,7 +108,7 @@ services:
       - DEBUG=true
       - MONGODB_URI=mongodb://mongodb:27017
       - MONGODB_DATABASE=ecommerce
-      - REDIS_URI=redis://redis:6379
+      - REDIS_URI=${REDIS_URI}
       - CART_SERVICE_PORT=8003
     depends_on:
       mongodb:
@@ -151,4 +136,3 @@ services:
 
 volumes:
   mongodb_data:
-  redis_data:

@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     # 🗃️ DATABASE CONFIGURATION
     # --------------------------------------------------
     # ✅ BEST PRACTICE: Use connection string format for flexibility
-    MONGODB_URI: MongoDsn = Field(
+    MONGODB_URI: str = Field(
         default="mongodb://localhost:27017",
         description="MongoDB connection string (use MongoDB Atlas URI in production)"
     )
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     # --------------------------------------------------
     # 🔴 REDIS CONFIGURATION (for caching)
     # --------------------------------------------------
-    REDIS_URI: RedisDsn = Field(
+    REDIS_URI: str = Field(
         default="redis://localhost:6379",
         description="Redis connection string"
     )
@@ -93,6 +93,25 @@ class Settings(BaseSettings):
         default=["http://localhost:3000", "http://localhost:8081"],
         description="Allowed CORS origins (add your mobile app URL in production)"
     )
+    
+    # --------------------------------------------------
+    # 📧 EMAIL CONFIGURATION (Brevo/Sendinblue)
+    # --------------------------------------------------
+    BREVO_API_KEY: str = Field(
+        default="",
+        description="Brevo API key for sending emails"
+    )
+    BREVO_SENDER_NAME: str = "BazaarHub"
+    BREVO_SENDER_EMAIL: str = "noreply@bazaarhub.com"
+    
+    # --------------------------------------------------
+    # 🔢 OTP CONFIGURATION
+    # --------------------------------------------------
+    OTP_EXPIRE_MINUTES: int = Field(
+        default=5,
+        description="OTP expiration time in minutes"
+    )
+    OTP_LENGTH: int = 6
     
     # --------------------------------------------------
     # 📊 SERVICE PORTS (for microservices)
